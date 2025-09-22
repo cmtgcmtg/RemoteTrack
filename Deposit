@@ -1,1 +1,67 @@
-print("bruh")
+local copas = require("copas")
+local socket = require("socket")
+local json=require("cjson")
+local http=require("socket.http")
+local ltn12=require("ltn12")
+local HttpInfoFromClient="None"
+
+
+DataBase={
+}
+
+
+function DecipherSendHomeComputer()
+local ClientInfo=json.decode(HttpInfoFromClient)
+local Direct=ClientInfo.Password
+local IP=DataBase[Direct]
+local payload={ClientInfo.MouseX,ClientInfo.MouseY,ClientInfo.Key}
+local response={}
+local client = assert(socket.tcp())
+client:connect(IP,8080)
+client:send(payload)
+client:close()
+end
+
+function AddToDataBase(IP)
+local Password=HttpInfoFromClient.Password
+DataBase[Password]=IP
+local client = assert(socket.tcp())
+client:connect(IP,9000)
+client:send("Succesfully Entered")
+client:close()
+end
+
+
+local server = socket.bind("*", 8080)
+copas.addserver(server, function(c)
+  copas.settimeout(c, 10)
+
+HttpInfoFromClient = copas.receive(c, "*l")
+if HttpInfoFromClient then
+DecipherSendHomeComputer()
+HttpInfoFromClient="None"
+end
+  copas.send(c, "HTTP/1.1 200 OK")
+  copas.close(c)
+end)
+
+print("Listening on port 8080...")
+
+local server2 = socket.bind("*", 9000)
+copas.addserver(server2, function(c)
+  copas.settimeout(c, 10)
+
+HttpInfoFromClient = copas.receive(c, "*l")
+if HttpInfoFromClient then
+local IpClient=server2:accept()
+local IP,Port= IpClient:getpeername()
+AddToDataBase(IP)
+IpClient:close()
+HttpInfoFromClient="None"
+end
+  copas.send(c, "HTTP/1.1 200 OK")
+  copas.close(c)
+end)
+
+print("Listening on port 9000...")
+copas.loop()
