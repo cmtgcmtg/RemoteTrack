@@ -1,0 +1,11 @@
+FROM alpine:latest
+
+RUN apk add --no-cache lua lua-socket lua-cjson
+
+WORKDIR /app
+COPY server.lua .
+
+EXPOSE 8080
+EXPOSE 9000
+
+CMD ["lua", "server.lua"]
